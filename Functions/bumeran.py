@@ -1,3 +1,5 @@
+import datetime
+
 def make_area_urls(areas,url_base):
 
 	urls = []
@@ -29,13 +31,13 @@ def make_page_url(page_num, url):
 def make_link_url(link, url):
 	link_url = "http://bumeran.com.pe" + link
 	return link_url
-	
+
 #Must be sent to Functions
 def to_publication_date(pass_time):
     cur_date = datetime.date.today()
-
+    
     if pass_time == "Ayer":
-        pub_date= cur_date - datetime.timedelta(days = 1)
+        pub_date = cur_date - datetime.timedelta(days = 1)
         return pub_date
 
     parts = pass_time.split()
