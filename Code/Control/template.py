@@ -184,17 +184,17 @@ class Template:
     scraper = Scraper(soup, self.num_offSource)
     data = scraper.scrape()
     num_off = data[0]
-
+    
     try:
       num_off = int(num_off.split()[0])
     except:
       main_list.add_msg("value obtained is not a number", MessageList.ERR)
-      num_off = None, False
+      return None, False
 
     if num_off is None:
       main_list.set_title("Fail scraping number of offers.", MessageList.ERR)
       return None, False
-
+    
     return num_off, False
 
 
@@ -274,7 +274,8 @@ class Template:
         #check!
         try:
           pub_date = self.module.to_publication_date(pass_time)
-        except:
+        except Exception as e:
+          main_list.add_msg(str(e), MessageList.ERR)
           main_list.add_msg("to_publication_date function is not working properly", MessageList.ERR)
           return None
 
@@ -297,11 +298,11 @@ class Template:
     self.num_off = 0 if self.num_off is None else self.num_off
     main_list.add_msg("Número de ofertas encontradas: " + str(self.num_off), MessageList.INF)
     
-    max = 2000 if self.links_per_page is not None else 1
+    max_pages = 2000 if self.links_per_page is not None else 1
     num_pag = 0
     total_offers = []
-
-    while num_pag < max and (len(total_offers) < self.num_off or num_off_is_optional):
+    
+    while num_pag < max_pages and (len(total_offers) < self.num_off or num_off_is_optional):
       num_pag += 1
 
       try:
@@ -407,8 +408,8 @@ class Template:
       # Values is either a list of features (one for each offer)
       # or just one feature to assign to all the offers
       values = self.get_data_from_source(soup, source.values_source)
-      print("Names: ", names)
-      print("Values: ", values)
+      #print("Names: ", names)
+      #print("Values: ", values)
       
       for index, features in enumerate(tot_first_features):
         for name in names:
@@ -437,7 +438,7 @@ def load_offers(offers, main_list):
         cnt_disc += 1
 
   main_list.add_msg(str(cnt_load)+ " Offers succesfully loaded to database", MessageList.INF)
-  main_list.add_msg(str(cnt_disc)+ " Offers discarted because of duplication in database", MessageList.INF)
+  main_list.add_msg(str(cnt_disc)+ " Offers discarded because of duplication in database", MessageList.INF)
   main_list.add_msg(str(cnt_err) + " Offers failed to load to database", MessageList.ERR)
 
   if error_loading:
@@ -448,7 +449,7 @@ def load_offers(offers, main_list):
 
 
 def custom_import(filename, main_list):
-
+  
   mod_name = "Functions." + filename
 
   try:
@@ -588,8 +589,8 @@ class OfferTemplate(Template):
     for feat_source in self.feat_sources:
       names = self.get_data_from_source(soup, feat_source.names_source)
       values = self.get_data_from_source(soup, feat_source.values_source)
-      print("Names: ", names)
-      print("Values: ", values)
+      #print("Names: ", names)
+      #print("Values: ", values)
 
       for idx in range(min(len(names), len(values))):
         features[names[idx].lower()] = values[idx]
