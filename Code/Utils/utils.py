@@ -26,16 +26,16 @@ def read_url_from_file(temp_file):
 
 
 def read_text_from_file(temp_file):
-    str = temp_file.readline().strip()
+    string = temp_file.readline().strip()
 
-    if str == '':
+    if not string:
         return None, False
-    
-    # Soporta comentarios
-    while str[0] == '#':
-        str = temp_file.readline().strip()
 
-    data = str.split('|')
+    # Soporta comentarios
+    while string and string[0] == '#':
+        string = temp_file.readline().strip()
+
+    data = string.split('|')
 
     # parse text
     try:

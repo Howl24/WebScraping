@@ -591,6 +591,10 @@ class OfferTemplate(Template):
       values = self.get_data_from_source(soup, feat_source.values_source)
       #print("Names: ", names)
       #print("Values: ", values)
+      if names is None or values is None:
+        eprint("    Error extrayendo features. Oferta INVÁLIDA")
+        eprint("    Link: ", link)
+        return None
 
       for idx in range(min(len(names), len(values))):
         features[names[idx].lower()] = values[idx]
