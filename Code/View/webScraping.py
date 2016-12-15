@@ -77,7 +77,17 @@ def read_config_file(main_list):
 
   sender, _ = utils.read_text_from_file(conf_file)
   password, _ = utils.read_text_from_file(conf_file)
-  receiver, _ = utils.read_text_from_file(conf_file)
+  num_receivers, _ = utils.read_int_from_file(conf_file)
+  receiver_list = []
+  if num_receivers < 0:
+    main_list.set_title("Configuration error: invalid number of receivers")
+    return None
+  for i in range(num_receivers):
+    receiver, _ = utils.read_text_from_file(conf_file)
+    if receiver is None:
+      main_list.set_title("Configuration error: invalid receiver found")
+      return None
+    receiver_list.append(receiver)
   out, _ = utils.read_text_from_file(conf_file)
 
   filenames = []
@@ -89,18 +99,19 @@ def read_config_file(main_list):
       filename = add_template_path(filename)
       filenames.append(filename)
 
-  if check_config_values(sender, password, receiver, out,filenames):
+  if check_config_values(sender, password, receiver_list, out,filenames):
     main_list.set_title("Archivo de configuracion leído correctamente",MessageList.INF)
-    return sender, password, receiver, out, filenames
+    return sender, password, receiver_list, out, filenames
   else:
     main_list.set_title("Valores incorrectos en el archivo de configuración",MessageList.ERR)
     return None
 
 
-def check_config_values(sender, password, receiver, out, filenames):
-  if sender is None or password is None or receiver is None or out is None :
+def check_config_values(sender, password, receiver_list, out, filenames):
+  if sender is None or password is None or receiver_list is None or out is None:
     return False
-  if len(filenames)==0:
+
+  if len(filenames) == 0 or len(receiver_list) == 0:
     return False
 
   return True
@@ -117,9 +128,9 @@ def main():
   main_list = MessageList("Resumen:")
   msg_list = MessageList()
 
-  sender, password, receiver, out, filenames = read_config_file(msg_list)
+  sender, password, receiver_list, out, filenames = read_config_file(msg_list)
   main_list.add_msg_list(msg_list)
-
+  
   sys.stdout = open("summary.txt", 'w')
   sys.stderr = open(out,'w')
     
@@ -132,11 +143,12 @@ def main():
       msg_list = MessageList()
       template.execute(msg_list)
       main_list.add_msg_list(msg_list)
-
+  
   main_list.show_all(0,sys.stdout)
   sys.stdout.flush()
 
-  send_email(sender, password, receiver, out)
+  for receiver in receiver_list:
+    send_email(sender, password, receiver, out)
 
 
 if __name__ == "__main__":
