@@ -129,8 +129,8 @@ def main():
     sender, password, receiver_list, out, filenames = read_config_file(msg_list)
     main_list.add_msg_list(msg_list)
 
-    #sys.stdout = open("summary.txt", 'w')
-    #sys.stderr = open(out, 'w')
+    sys.stdout = open("summary.txt", 'w')
+    sys.stderr = open(out, 'w')
 
     for filename in filenames:
         msg_list = MessageList()
