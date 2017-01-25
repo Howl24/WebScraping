@@ -418,6 +418,6 @@ class Offer:
 
 
 if __name__ == "__main__":
-    source = "new_aptitus"
+    source = "new_bumeran"
     Offer.connectToDatabase(source)
     Offer.createTables()

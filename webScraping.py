@@ -1,7 +1,4 @@
 import sys
-sys.path.append('..')  # Code path added
-sys.path.append('../..')  # Project path added
-
 import smtplib
 from os.path import basename
 from email.mime.application import MIMEApplication
@@ -17,6 +14,7 @@ from Control.template import OfferTemplate
 def create_template(temp_filename, main_list):
     try:
         temp_file = open(temp_filename, 'r')
+
     except OSError:
         main_list.set_title("Plantilla no encontrada", MessageList.ERR)
         return None
@@ -64,7 +62,7 @@ def send_email(sender, password, receiver, filename):
 
 
 def read_config_file(main_list):
-    config_filename = "../../config"
+    config_filename = "config"
 
     try:
         conf_file = open(config_filename, 'r')
@@ -118,7 +116,7 @@ def check_config_values(sender, password, receiver_list, out, filenames):
 
 
 def add_template_path(filename):
-    relativePath = "../../Templates/"
+    relativePath = "Templates/"
     return relativePath + filename
 
 

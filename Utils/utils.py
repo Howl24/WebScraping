@@ -5,7 +5,7 @@ import sys
 def eprint(*args,**kwargs):
   print(*args, file = sys.stderr, **kwargs)
 
-from Utils.message import MessageList
+from .message import MessageList
 
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
