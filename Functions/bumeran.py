@@ -61,7 +61,7 @@ def to_publication_date(pass_time):
         pub_date = cur_date - datetime.timedelta(weeks = value)
 
     if type in ["mes", "meses"]:
-        pub_date = cur_date - datetime.timedelta(months = value)
+        pub_date = cur_date - datetime.timedelta(days = 30*value)
         
     return pub_date
 
