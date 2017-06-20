@@ -1,8 +1,8 @@
-import json
 import re
-import dateparser
 import datetime
 from collections import namedtuple
+import dateparser
+
 
 def make_area_urls(areas, url_base):
     """
@@ -11,13 +11,13 @@ def make_area_urls(areas, url_base):
     """
     return [url_base]
 
+
 def make_period_url(period, url_base):
     """
     Generates url for specified period
     CAS: not supported, only returns base url
     """
     return url_base
-
 
 
 def make_page_url(page_num, url_base):
@@ -36,9 +36,9 @@ def make_link_url(link, url_base):
     tokens = url_base.split('/')
     tokens[-1] = link
     return '/'.join(tokens)
-        
-# Publication date extraction for a CAS posting
 
+
+# Publication date extraction for a CAS posting
 PubDate = namedtuple('PubDate', ['month', 'year'])
 
 ACCENTED = {
@@ -50,6 +50,7 @@ ACCENTED = {
     'Ñ': 'N',
 }
 
+
 def remove_accent(char):
     lower = char.islower()
     try:
@@ -59,6 +60,7 @@ def remove_accent(char):
         return new_val
     except KeyError:
         return char
+
 
 def remove_accents(val, case='upper'):
     new_val = ''
@@ -70,6 +72,7 @@ def remove_accents(val, case='upper'):
         new_val += remove_accent(char)
     return new_val
 
+
 def match_date(src):
     regex = re.compile('(\\d+([\\.|/])\\d+\\2\\d+)')
     match = regex.search(src)
@@ -78,6 +81,7 @@ def match_date(src):
     except AttributeError:
         return None
 
+
 def get_month_year(date_str):
     try:
         date = dateparser.parse(date_string=date_str)
@@ -85,11 +89,13 @@ def get_month_year(date_str):
     except:
         return None
 
+
 def get_clean_date(src):
     date = match_date(src)
     if date is None:
         return None
     return get_month_year(date)
+
 
 def get_match_group(src, pattern, matchNumber=0, groupNumber=1):
     #pattern = re.escape(pattern)
@@ -105,30 +111,32 @@ def get_match_group(src, pattern, matchNumber=0, groupNumber=1):
     try:
         # Several capture groups
         if isinstance(match, tuple):
-            return match[groupNumber-1]
+            return match[groupNumber - 1]
         # Only one group
         return match
-    except:
+    except IndexError:
         return None
 
 
 def get_a_partir_del(src):
     regex = r"a partir del?(.*?)[\.|,]"
     date_str = get_match_group(src, regex, groupNumber=2)
-    
+
     if date_str is None:
         return None
 
     return get_month_year(date_str)
+
 
 def get_desde_el(src):
     regex = r"des?de\s+((el|ek)\s+)+(.*?)(\s+en|,|\.|desde|\n|\r)"
     date_str = get_match_group(src, regex, groupNumber=3)
-    
+
     if date_str is None:
         return None
 
     return get_month_year(date_str)
+
 
 def get_rango_fechas(src):
     regex = r"del \d+ al (\d+\s*.*?)[\.|,]"
@@ -139,14 +147,16 @@ def get_rango_fechas(src):
 
     return get_month_year(date_str)
 
+
 def get_publicacion_en(src):
     regex = "publicacion en [^:]*:\s+([^\.|,|\\n|\\r]*)"
     date_str = get_match_group(src, regex)
-    
+
     if date_str is None:
         return None
     date = get_month_year(date_str)
     return date
+
 
 # Sorted by number of occurrences
 FILTERS = [
@@ -156,6 +166,7 @@ FILTERS = [
     get_rango_fechas,
     get_publicacion_en,
 ]
+
 
 def to_publication_date(desc):
     # Remove accents and convert to uppercase
@@ -173,7 +184,7 @@ def to_publication_date(desc):
     fecha = None
     for func in FILTERS:
         fecha = func(desc)
-        if fecha != None:
+        if fecha is not None:
             break
     else:
         # If no date is found, current one is assigned
