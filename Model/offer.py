@@ -77,7 +77,7 @@ class Offer:
                career text,
                field text,
                skill text,
-               value counter, 
+               value counter,
                PRIMARY KEY ((year, month, career), field, skill));
                """.format(cls.counterTable)
 
@@ -118,11 +118,11 @@ class Offer:
               id = %s;
               """.format(cls.offersTable)
 
-        result = cls.session.execute(cmd,[
-                    year,
-                    month,
-                    id,
-                    ])
+        result = cls.session.execute(cmd, [
+            year,
+            month,
+            id,
+        ])
 
         result = list(result)
 
@@ -143,17 +143,16 @@ class Offer:
 
         try:
             future_res = self.session.execute_async(cmd, [
-                            self.id,
-                            self.year,
-                            self.month,
-                            self.features,
-                            self.careers,
-                            ])
+                self.id,
+                self.year,
+                self.month,
+                self.features,
+                self.careers,
+            ])
         except:
             return constant.FAIL
 
         return future_res
-
 
     def get_skills(self):
         cmd = """
@@ -164,10 +163,10 @@ class Offer:
               """.format(self.offerSkillsTable)
 
         result = self.session.execute(cmd, [
-                    self.id,
-                    self.year, 
-                    self.month,
-                    ])
+            self.id,
+            self.year,
+            self.month,
+        ])
 
         skills = {}
         for row in result:
@@ -193,7 +192,6 @@ class Offer:
 
         return res_skills
 
-
     def update(self):
         new_careers = self.careers
         new_skills = self.skills
@@ -201,20 +199,20 @@ class Offer:
 
         cmd = """
               SELECT * FROM {0} WHERE
-              year = %s AND 
+              year = %s AND
               month = %s AND
               id = %s;
               """.format(self.offersTable)
 
         result = self.session.execute(cmd, [
-                    self.year,
-                    self.month,
-                    self.id,
-                    ])
+            self.year,
+            self.month,
+            self.id,
+        ])
 
         result = list(result)
 
-        if (len(result) ==0):
+        if not result:
             old_features = {}
             old_careers = set()
             old_skills = {}
@@ -233,7 +231,7 @@ class Offer:
         skills_to_remove = self.subtract_skills(old_skills, new_skills)
 
         # Order is important!
-        # Delete skills before update careers 
+        # Delete skills before update careers
         # Similarly, add skills after careers.
 
 
@@ -248,7 +246,7 @@ class Offer:
 
     def insert_without_skills(self):
         cmd = """
-              INSERT INTO {0} 
+              INSERT INTO {0}
               (id, year, month, features, careers)
               VALUES
               (%s, %s, %s, %s, %s);
@@ -261,7 +259,7 @@ class Offer:
                 self.month,
                 self.features,
                 self.careers,
-                ])
+            ])
         except:
             return constant.FAIL
 
@@ -299,15 +297,15 @@ class Offer:
                         career,
                         field,
                         skill,
-                        ])
-                    
+                    ])
+
                     self.session.execute(cmd, [
                         self.id,
                         self.year,
                         self.month,
                         field,
                         skill,
-                        ])
+                    ])
 
     def add_skills(self, skills_to_add):
         cmd_upd = """
@@ -321,7 +319,7 @@ class Offer:
                   """.format(self.counterTable)
 
         cmd_ins = """
-                  INSERT INTO {0} 
+                  INSERT INTO {0}
                   (id, year, month, field, skill)
                   VALUES
                   (%s, %s, %s, %s, %s);
@@ -339,18 +337,17 @@ class Offer:
                         self.year,
                         self.month,
                         career,
-                        field, 
+                        field,
                         skill,
-                        ])
+                    ])
 
                     self.session.execute(cmd_ins, [
                         self.id,
-                        self.year, 
+                        self.year,
                         self.month,
                         field,
                         skill,
-                        ])
-
+                    ])
 
     def add_careers(self, careers):
         cmd = """
@@ -366,7 +363,7 @@ class Offer:
             self.year,
             self.month,
             self.id,
-            ])
+        ])
 
         if self.careers is None:
             self.careers = set()
@@ -375,7 +372,6 @@ class Offer:
             self.careers.add(career)
 
         return constant.DONE
-
 
     def add_career(self, career):
         cmd = """
@@ -386,12 +382,12 @@ class Offer:
               id = %s;
               """.format(self.offersTable)
 
-        self.session.execute(cmd,[
+        self.session.execute(cmd, [
             career,
             self.year,
             self.month,
             self.id,
-            ])
+        ])
 
         if self.careers is None:
             self.careers = set()
@@ -412,12 +408,13 @@ class Offer:
             self.session.execute(cmd, [
                 self.id,
                 self.year,
-                self.month])
+                self.month
+            ])
         except:
             return constant.FAIL
 
 
 if __name__ == "__main__":
-    source = "new_bumeran"
+    source = "test_cas"
     Offer.connectToDatabase(source)
     Offer.createTables()
