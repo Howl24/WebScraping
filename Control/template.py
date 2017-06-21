@@ -1,6 +1,8 @@
 import requests
 import bs4
 import importlib
+import datetime
+import functools
 
 from Utils.message import MessageList
 from Utils import utils
@@ -417,6 +419,17 @@ def load_offers(offers, main_list):
     cnt_disc = 0
     cnt_err = 0
 
+    all_offers = Offer.select_news()
+    current_offers = list(
+        map(
+            lambda x: Offer(year=x.year, month=x.month, id=x.id),
+            filter(
+                utils.this_month_filter,
+                all_offers
+            )
+        )
+    )
+    duplicates = []
     future_res = []
     for offer in offers:
         inserted = offer.insert_new()
@@ -426,6 +439,8 @@ def load_offers(offers, main_list):
         else:
             cnt_load += 1
             future_res.append(inserted)
+            if offer in current_offers:
+                duplicates.append(offer)
 
     for res in future_res:
         res.result()
