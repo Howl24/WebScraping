@@ -2,7 +2,7 @@
 from __future__ import print_function
 import sys
 from .message import MessageList
-
+import datetime
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
@@ -155,3 +155,18 @@ def is_blank(mystring):
 
 def clean_whitespaces(text):
     return ' '.join(text.split())
+
+
+def date_filter(offer, start, end):
+    saved_date = datetime.date(year=offer.year, month=offer.month, day=2)
+    return start <= saved_date < end
+
+
+def this_month_filter(offer):
+    start = datetime.datetime.now().replace(day=1).date()
+    end = datetime.datetime(
+        year=start.year,
+        month=start.month + 1,
+        day=1
+    ).date()
+    return date_filter(offer, start, end)
