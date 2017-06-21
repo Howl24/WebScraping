@@ -20,6 +20,16 @@ class Offer:
         self.careers = careers
         self.skills = skills
 
+    def __hash__(self):
+        return 1
+
+    def __eq__(self, rhs):
+        if not isinstance(rhs, Offer):
+            return False
+        return (self.id == rhs.id and
+                self.month == rhs.month and
+                self.year == rhs.year)
+
     @classmethod
     def connectToDatabase(cls, source):
         cluster = Cluster()
