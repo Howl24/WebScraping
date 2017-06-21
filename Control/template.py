@@ -384,7 +384,11 @@ class Template:
 
                     if offers is not None:
                         msg_list = MessageList()
-                        load_offers(offers, msg_list)
+                        load_offers(
+                            offers,
+                            msg_list,
+                            job_center=self.job_center.lower()
+                        )
                         main_list.add_msg_list(msg_list)
 
                 main_list.set_title("La plantilla " + self.job_center + " se ejecutó correctamente.", MessageList.INF)
@@ -413,22 +417,25 @@ class Template:
         return tot_first_features
 
 
-def load_offers(offers, main_list):
+def load_offers(offers, main_list, job_center=None):
     error_loading = False
     cnt_load = 0
     cnt_disc = 0
     cnt_err = 0
 
-    all_offers = Offer.select_news()
-    current_offers = list(
-        map(
-            lambda x: Offer(year=x.year, month=x.month, id=x.id),
-            filter(
-                utils.this_month_filter,
-                all_offers
+    # Match 'cas', 'new_cas', 'test_cas', etc
+    is_cas = job_center and job_center.endswith('cas')
+    if is_cas:
+        all_offers = Offer.select_news()
+        current_offers = list(
+            map(
+                lambda x: Offer(year=x.year, month=x.month, id=x.id),
+                filter(
+                    utils.this_month_filter,
+                    all_offers
+                )
             )
         )
-    )
     duplicates = []
     future_res = []
     for offer in offers:
@@ -439,11 +446,34 @@ def load_offers(offers, main_list):
         else:
             cnt_load += 1
             future_res.append(inserted)
-            if offer in current_offers:
+            if is_cas and offer in current_offers:
                 duplicates.append(offer)
 
     for res in future_res:
         res.result()
+
+    msg_list = MessageList()
+    if duplicates:
+        msg_list.set_title(
+            'Se encontraron {} ofertas repetidas'.format(len(duplicates)),
+            MessageList.INF
+        )
+    else:
+        msg_list.set_title(
+            'No se encontraron ofertas repetidas',
+            MessageList.INF
+        )
+    for offer in duplicates:
+        msg_list.add_msg(
+            '{month} | {year} | {id} | {features}'.format(
+                month=offer.month,
+                year=offer.year,
+                id=offer.id,
+                features=offer.features
+            ),
+            MessageList.INF
+        )
+    main_list.add_msg_list(msg_list)
 
     main_list.add_msg(str(cnt_load) + " nuevas ofertas guardadas", MessageList.INF)
 
