@@ -102,11 +102,13 @@ class Offer:
         return constant.DONE
 
     @classmethod
-    def select_news(cls):
+    def select_news(cls, limit=0):
         cmd = """
-              SELECT * FROM {0};
+              SELECT * FROM {0}
               """.format(cls.newOffersTable)
-
+        limit = int(limit)
+        if limit > 0:
+            cmd += " LIMIT {}".format(limit)
         result = cls.session.execute(cmd)
         return result
 
