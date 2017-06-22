@@ -31,7 +31,8 @@ class Template:
         self.list_sources = list_sources
         self.date_feature = date_feature
         self.first_level_sources = first_level_sources
-
+        self.report_filename = '.{}_report'.format(self.job_center.lower())
+        self.report_file = None  # Open file only when calling execute
         self.module = None
 
     @staticmethod
@@ -347,6 +348,13 @@ class Template:
             return valid_offers
 
     def execute(self, main_list):
+        with open(self.report_filename, 'w') as f:
+            self.report_file = f  # Get object-wide reference to file
+            result = self._execute(main_list)
+            self.report_file = None  # Remove reference to file
+            return result
+
+    def _execute(self, main_list):
 
         print(self.job_center)
         Offer.connectToDatabase(self.job_center.lower())
@@ -387,7 +395,8 @@ class Template:
                         load_offers(
                             offers,
                             msg_list,
-                            job_center=self.job_center.lower()
+                            self.job_center.lower(),
+                            self.report_file
                         )
                         main_list.add_msg_list(msg_list)
 
@@ -417,7 +426,7 @@ class Template:
         return tot_first_features
 
 
-def load_offers(offers, main_list, job_center=None):
+def load_offers(offers, main_list, job_center, report_file):
     error_loading = False
     cnt_load = 0
     cnt_disc = 0
@@ -436,7 +445,7 @@ def load_offers(offers, main_list, job_center=None):
                 )
             )
         )
-    duplicates = []
+    new_offers = []
     future_res = []
     for offer in offers:
         inserted = offer.insert_new()
@@ -446,34 +455,13 @@ def load_offers(offers, main_list, job_center=None):
         else:
             cnt_load += 1
             future_res.append(inserted)
-            if is_cas and offer in current_offers:
-                duplicates.append(offer)
+            if is_cas and offer not in current_offers:
+                new_offers.append(offer)
 
     for res in future_res:
         res.result()
 
-    msg_list = MessageList()
-    if duplicates:
-        msg_list.set_title(
-            'Se encontraron {} ofertas repetidas'.format(len(duplicates)),
-            MessageList.INF
-        )
-    else:
-        msg_list.set_title(
-            'No se encontraron ofertas repetidas',
-            MessageList.INF
-        )
-    for offer in duplicates:
-        msg_list.add_msg(
-            '{month} | {year} | {id} | {features}'.format(
-                month=offer.month,
-                year=offer.year,
-                id=offer.id,
-                features=offer.features
-            ),
-            MessageList.INF
-        )
-    main_list.add_msg_list(msg_list)
+    build_offer_csv_report(new_offers, report_file)
 
     main_list.add_msg(str(cnt_load) + " nuevas ofertas guardadas", MessageList.INF)
 
@@ -481,6 +469,10 @@ def load_offers(offers, main_list, job_center=None):
         main_list.set_title("Algunas ofertas no pudieron guardarse, revisar el detalle", MessageList.ERR)
     else:
         main_list.set_title("Todas las ofertas se guardaron", MessageList.INF)
+
+
+def build_offer_csv_report(offer_list, report_file):
+    pass
 
 
 def custom_import(filename, main_list):
