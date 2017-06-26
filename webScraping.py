@@ -34,7 +34,7 @@ def create_template(temp_filename, main_list):
         return template
 
 
-def send_email(sender, password, receiver, filename):
+def send_email(sender, password, receiver, filenames):
     msg = MIMEMultipart()
     with open("summary.txt") as repFile:
         part = MIMEText(repFile.read())
@@ -45,11 +45,14 @@ def send_email(sender, password, receiver, filename):
 
     sys.stderr.flush()
 
-    with open(filename, "rb") as file:
-        part = MIMEApplication(file.read(), Name=basename(filename))
-        part['Content-Disposition'] = 'attachment; filename="%s"' % \
-                                      basename(filename)
-        msg.attach(part)
+    if not isinstance(filenames, (list, tuple)):
+        filenames = [filenames]
+    for filename in filenames:
+        with open(filename, "rb") as file:
+            part = MIMEApplication(file.read(), Name=basename(filename))
+            part['Content-Disposition'] = 'attachment; filename="%s"' % \
+                                          basename(filename)
+            msg.attach(part)
 
     s = smtplib.SMTP('smtp.gmail.com', 587)
     s.starttls()
@@ -131,7 +134,7 @@ def main():
 
     sys.stdout = open("summary.txt", 'w')
     sys.stderr = open(out, 'w')
-
+    out_files = [out]
     for filename in filenames:
         msg_list = MessageList()
         template = create_template(filename, msg_list)
@@ -140,13 +143,15 @@ def main():
         if template is not None:
             msg_list = MessageList()
             template.execute(msg_list)
+            if template.report_filename:
+                out_files.append(template.report_filename)
             main_list.add_msg_list(msg_list)
 
     main_list.show_all(0, sys.stdout)
     sys.stdout.flush()
 
     for receiver in receiver_list:
-        send_email(sender, password, receiver, out)
+        send_email(sender, password, receiver, out_files)
 
 
 if __name__ == "__main__":
