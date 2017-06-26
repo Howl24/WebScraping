@@ -12,6 +12,7 @@ from Control.scraper import Scraper
 from Model.offer import Offer
 
 from Control import textProcessor as tp  # TP tu terror
+from PublicarCAS import export as export_cas
 
 
 class Template:
@@ -31,7 +32,7 @@ class Template:
         self.list_sources = list_sources
         self.date_feature = date_feature
         self.first_level_sources = first_level_sources
-        self.report_filename = '.{}_report'.format(self.job_center.lower())
+        self.report_filename = '.{}_report.csv'.format(self.job_center.lower())
         self.report_file = None  # Open file only when calling execute
         self.module = None
 
@@ -473,9 +474,12 @@ def load_offers(offers, main_list, job_center, report_file):
 
 def build_offer_csv_report(offer_list, report_file):
     if not offer_list:
-        report_file.write('No hay ofertas')
+        report_file.write('No hay ofertas nuevas')
         return
-    print(offer_list)
+    offer_list = export_cas.run_processing(offer_list, '/dev/null')
+    if not offer_list:
+        report_file.write('No hay ofertas nuevas')
+        return
     header = ['month', 'year', 'id']
     feature_names = list(offer_list[0].features.keys())
     header = header + feature_names
