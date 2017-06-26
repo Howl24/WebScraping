@@ -310,7 +310,7 @@ class Template:
                 return None  # Return total_offers if you dont wanna abort all
 
             eprint("  Page #" + str(num_pag))
-            offers = self.get_offers_from_page_url(page_url, main_list, limit=20)
+            offers = self.get_offers_from_page_url(page_url, main_list)
             eprint("")
 
             if offers is None:
