@@ -1,5 +1,7 @@
 from cassandra.cluster import Cluster
 from datetime import datetime
+import sys
+sys.path.insert(1, '../')
 import constant
 
 

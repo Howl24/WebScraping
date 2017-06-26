@@ -309,7 +309,7 @@ class Template:
                 return None  # Return total_offers if you dont wanna abort all
 
             eprint("  Page #" + str(num_pag))
-            offers = self.get_offers_from_page_url(page_url, main_list)
+            offers = self.get_offers_from_page_url(page_url, main_list, limit=20)
             eprint("")
 
             if offers is None:
@@ -472,7 +472,23 @@ def load_offers(offers, main_list, job_center, report_file):
 
 
 def build_offer_csv_report(offer_list, report_file):
-    pass
+    if not offer_list:
+        report_file.write('No hay ofertas')
+        return
+    print(offer_list)
+    header = ['month', 'year', 'id']
+    feature_names = list(offer_list[0].features.keys())
+    header = header + feature_names
+    csv_header = '|'.join('^' + str(name) + '^' for name in header)
+    print(csv_header, file=report_file)
+    for offer in offer_list:
+        csv_line = '^{}^|^{}^|^{}^|'.format(
+            offer.month,
+            offer.year,
+            offer.id
+        )
+        csv_line += offer.as_csv(features=feature_names)
+        print(csv_line, file=report_file)
 
 
 def custom_import(filename, main_list):
