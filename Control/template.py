@@ -481,7 +481,7 @@ def build_offer_csv_report(offer_list, report_file):
         report_file.write('No hay ofertas nuevas')
         return
     header = ['month', 'year', 'id']
-    feature_names = list(offer_list[0].features.keys())
+    feature_names = export_cas.DEFAULT_FIELD_ORDER
     header = header + feature_names
     csv_header = '|'.join('^' + str(name) + '^' for name in header)
     print(csv_header, file=report_file)
