@@ -3,6 +3,9 @@ import bs4
 import importlib
 import datetime
 import functools
+import io
+import csv
+import pyexcel
 
 from Utils.message import MessageList
 from Utils import utils
@@ -32,7 +35,9 @@ class Template:
         self.list_sources = list_sources
         self.date_feature = date_feature
         self.first_level_sources = first_level_sources
-        self.report_filename = '.{}_report.csv'.format(self.job_center.lower())
+        # Match 'cas', 'new_cas', 'test_cas', etc
+        self.print_report = self.job_center and self.job_center.lower().endswith('cas')
+        self.report_filename = '.{}_report.xls'.format(self.job_center.lower())
         self.report_file = None  # Open file only when calling execute
         self.module = None
 
@@ -349,7 +354,7 @@ class Template:
             return valid_offers
 
     def execute(self, main_list):
-        with open(self.report_filename, 'w') as f:
+        with open(self.report_filename, 'wb') as f:
             self.report_file = f  # Get object-wide reference to file
             result = self._execute(main_list)
             self.report_file = None  # Remove reference to file
@@ -396,8 +401,8 @@ class Template:
                         load_offers(
                             offers,
                             msg_list,
-                            self.job_center.lower(),
-                            self.report_file
+                            self.report_file,
+                            print_report=self.print_report
                         )
                         main_list.add_msg_list(msg_list)
 
@@ -427,15 +432,13 @@ class Template:
         return tot_first_features
 
 
-def load_offers(offers, main_list, job_center, report_file):
+def load_offers(offers, main_list, report_file, print_report=False):
     error_loading = False
     cnt_load = 0
     cnt_disc = 0
     cnt_err = 0
 
-    # Match 'cas', 'new_cas', 'test_cas', etc
-    is_cas = job_center and job_center.endswith('cas')
-    if is_cas:
+    if print_report:
         all_offers = Offer.select_news()
         current_offers = list(
             map(
@@ -456,13 +459,14 @@ def load_offers(offers, main_list, job_center, report_file):
         else:
             cnt_load += 1
             future_res.append(inserted)
-            if is_cas and offer not in current_offers:
+            if print_report and offer not in current_offers:
                 new_offers.append(offer)
 
     for res in future_res:
         res.result()
 
-    build_offer_csv_report(new_offers, report_file)
+    if print_report:
+        build_offer_report(new_offers, report_file)
 
     main_list.add_msg(str(cnt_load) + " nuevas ofertas guardadas", MessageList.INF)
 
@@ -472,7 +476,8 @@ def load_offers(offers, main_list, job_center, report_file):
         main_list.set_title("Todas las ofertas se guardaron", MessageList.INF)
 
 
-def build_offer_csv_report(offer_list, report_file):
+def build_offer_report(offer_list, report_file):
+    tmp_file = io.StringIO()
     if not offer_list:
         report_file.write('No hay ofertas nuevas')
         return
@@ -480,11 +485,12 @@ def build_offer_csv_report(offer_list, report_file):
     if not offer_list:
         report_file.write('No hay ofertas nuevas')
         return
+    # Print to intermediate in-memory buffer
     header = ['month', 'year', 'id']
     feature_names = export_cas.DEFAULT_FIELD_ORDER
     header = header + feature_names
     csv_header = '|'.join('^' + str(name) + '^' for name in header)
-    print(csv_header, file=report_file)
+    print(csv_header, file=tmp_file)
     for offer in offer_list:
         csv_line = '^{}^|^{}^|^{}^|'.format(
             offer.month,
@@ -492,7 +498,21 @@ def build_offer_csv_report(offer_list, report_file):
             offer.id
         )
         csv_line += offer.as_csv(features=feature_names)
-        print(csv_line, file=report_file)
+        print(csv_line, file=tmp_file)
+    # Reset buffer pointer to read offers
+    tmp_file.seek(0)
+    reader = csv.reader(
+        tmp_file,
+        quotechar='^',
+        delimiter='|',
+        # doublequote=False,
+    )
+    lines = [line for line in reader]
+    pyexcel.save_as(
+        array=lines,
+        dest_file_stream=report_file,
+        dest_file_type='xls'
+    )
 
 
 def custom_import(filename, main_list):

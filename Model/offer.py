@@ -40,7 +40,7 @@ class Offer:
     @classmethod
     def createTables(cls):
         # Two tables are created to avoid use of IF NOT EXISTS
-        # due to his high performance cost
+        # due to its high performance cost
 
         # First, all new offers are inserted in the newOffersTable
         # in this step, we eliminate repeated offers in this table
