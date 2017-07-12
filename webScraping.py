@@ -143,7 +143,7 @@ def main():
         if template is not None:
             msg_list = MessageList()
             template.execute(msg_list)
-            if template.report_filename:
+            if template.print_report:
                 out_files.append(template.report_filename)
             main_list.add_msg_list(msg_list)
 
