@@ -1,6 +1,11 @@
 import requests
 import bs4
 import importlib
+import datetime
+import functools
+import io
+import csv
+import pyexcel
 
 from Utils.message import MessageList
 from Utils import utils
@@ -10,6 +15,7 @@ from Control.scraper import Scraper
 from Model.offer import Offer
 
 from Control import textProcessor as tp  # TP tu terror
+from PublicarCAS import export as export_cas
 
 
 class Template:
@@ -29,7 +35,10 @@ class Template:
         self.list_sources = list_sources
         self.date_feature = date_feature
         self.first_level_sources = first_level_sources
-
+        # Match 'cas', 'new_cas', 'test_cas', etc
+        self.print_report = self.job_center and self.job_center.lower().endswith('cas')
+        self.report_filename = '.{}_report.xls'.format(self.job_center.lower())
+        self.report_file = None  # Open file only when calling execute
         self.module = None
 
     @staticmethod
@@ -345,6 +354,13 @@ class Template:
             return valid_offers
 
     def execute(self, main_list):
+        with open(self.report_filename, 'wb') as f:
+            self.report_file = f  # Get object-wide reference to file
+            result = self._execute(main_list)
+            self.report_file = None  # Remove reference to file
+            return result
+
+    def _execute(self, main_list):
 
         print(self.job_center)
         Offer.connectToDatabase(self.job_center.lower())
@@ -382,7 +398,12 @@ class Template:
 
                     if offers is not None:
                         msg_list = MessageList()
-                        load_offers(offers, msg_list)
+                        load_offers(
+                            offers,
+                            msg_list,
+                            self.report_file,
+                            print_report=self.print_report
+                        )
                         main_list.add_msg_list(msg_list)
 
                 main_list.set_title("La plantilla " + self.job_center + " se ejecutó correctamente.", MessageList.INF)
@@ -411,12 +432,24 @@ class Template:
         return tot_first_features
 
 
-def load_offers(offers, main_list):
+def load_offers(offers, main_list, report_file, print_report=False):
     error_loading = False
     cnt_load = 0
     cnt_disc = 0
     cnt_err = 0
 
+    if print_report:
+        all_offers = Offer.select_news()
+        current_offers = list(
+            map(
+                lambda x: Offer(year=x.year, month=x.month, id=x.id),
+                filter(
+                    utils.this_month_filter,
+                    all_offers
+                )
+            )
+        )
+    new_offers = []
     future_res = []
     for offer in offers:
         inserted = offer.insert_new()
@@ -426,9 +459,14 @@ def load_offers(offers, main_list):
         else:
             cnt_load += 1
             future_res.append(inserted)
+            if print_report and offer not in current_offers:
+                new_offers.append(offer)
 
     for res in future_res:
         res.result()
+
+    if print_report:
+        build_offer_report(new_offers, report_file)
 
     main_list.add_msg(str(cnt_load) + " nuevas ofertas guardadas", MessageList.INF)
 
@@ -436,6 +474,45 @@ def load_offers(offers, main_list):
         main_list.set_title("Algunas ofertas no pudieron guardarse, revisar el detalle", MessageList.ERR)
     else:
         main_list.set_title("Todas las ofertas se guardaron", MessageList.INF)
+
+
+def build_offer_report(offer_list, report_file):
+    tmp_file = io.StringIO()
+    if not offer_list:
+        report_file.write('No hay ofertas nuevas')
+        return
+    offer_list = export_cas.run_processing(offer_list, '/dev/null')
+    if not offer_list:
+        report_file.write('No hay ofertas nuevas')
+        return
+    # Print to intermediate in-memory buffer
+    header = ['month', 'year', 'id']
+    feature_names = export_cas.DEFAULT_FIELD_ORDER
+    header = header + feature_names
+    csv_header = '|'.join('^' + str(name) + '^' for name in header)
+    print(csv_header, file=tmp_file)
+    for offer in offer_list:
+        csv_line = '^{}^|^{}^|^{}^|'.format(
+            offer.month,
+            offer.year,
+            offer.id
+        )
+        csv_line += offer.as_csv(features=feature_names)
+        print(csv_line, file=tmp_file)
+    # Reset buffer pointer to read offers
+    tmp_file.seek(0)
+    reader = csv.reader(
+        tmp_file,
+        quotechar='^',
+        delimiter='|',
+        # doublequote=False,
+    )
+    lines = [line for line in reader]
+    pyexcel.save_as(
+        array=lines,
+        dest_file_stream=report_file,
+        dest_file_type='xls'
+    )
 
 
 def custom_import(filename, main_list):
